@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haifaa — Company Map · Riyadh GRC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1220;
+    --bg2:#0E1A2D;
+    --ink:#F2ECDF;
+    --muted:#8597AD;
+    --line:#1C2A40;
+    --gold:#E0B341;     /* Route A — best pay & security */
+    --teal:#3FB6A8;     /* Route B — strong brand, faster */
+    --coral:#E8836B;    /* Route C — direct fit, fastest */
+    --warm:#FFF1C9;     /* warm-door halo */
+    --panel:#0F1B2E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 800px at 50% -10%, #13243d 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    overflow:hidden;
+  }
+  .wrap{display:flex;height:100vh;width:100vw}
+  /* ---- left: map ---- */
+  .stage{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+  header{padding:22px 28px 10px;flex:0 0 auto}
+  .eyebrow{font-family:'Space Grotesk';font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  h1{font-family:'Space Grotesk';font-weight:700;font-size:26px;letter-spacing:-.01em;margin-top:4px}
+  h1 span{color:var(--muted);font-weight:500}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:6px;max-width:640px;line-height:1.5}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 28px 6px}
+  .search{position:relative}
+  .search input{
+    background:var(--bg2);border:1px solid var(--line);color:var(--ink);
+    padding:9px 14px 9px 34px;border-radius:999px;font-size:13px;width:210px;font-family:inherit;outline:none;transition:border-color .2s,width .2s
+  }
+  .search input:focus{border-color:var(--gold);width:240px}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.55}
+  .chip{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:8px 14px;border-radius:999px;font-size:12.5px;cursor:pointer;font-family:'Space Grotesk';font-weight:500;
+    display:inline-flex;align-items:center;gap:7px;transition:all .18s;user-select:none
+  }
+  .chip .swatch{width:9px;height:9px;border-radius:50%}
+  .chip[data-on="true"]{color:var(--ink);border-color:currentColor}
+  .chip.a[data-on="true"]{box-shadow:inset 0 0 0 1px var(--gold);border-color:var(--gold)}
+  .chip.b[data-on="true"]{box-shadow:inset 0 0 0 1px var(--teal);border-color:var(--teal)}
+  .chip.c[data-on="true"]{box-shadow:inset 0 0 0 1px var(--coral);border-color:var(--coral)}
+  .chip.warm[data-on="true"]{box-shadow:inset 0 0 0 1px var(--warm);border-color:var(--warm);color:var(--warm)}
+  .chip[data-on="false"]{opacity:.45}
+
+  .mapbox{flex:1;min-height:0;position:relative}
+  svg.map{width:100%;height:100%;display:block;cursor:grab}
+  svg.map:active{cursor:grabbing}
+  .link{stroke-width:1;fill:none}
+  .node{cursor:pointer}
+  .node circle.dot{transition:r .18s, opacity .2s}
+  .node:hover circle.dot{r:9}
+  .node text{font-family:'Space Grotesk';font-size:9px;fill:var(--muted);opacity:0;transition:opacity .15s;pointer-events:none}
+  .node:hover text{opacity:1;fill:var(--ink)}
+  .node.dim{opacity:.12;pointer-events:none}
+  .node.sel circle.dot{stroke:#fff;stroke-width:2.5}
+  .hub text.rlabel{font-family:'Space Grotesk';font-weight:600;font-size:13px;letter-spacing:.02em}
+  .hub text.rcount{font-family:'Space Grotesk';font-size:10px;fill:var(--muted)}
+  .center text.cname{font-family:'Space Grotesk';font-weight:700;font-size:15px;fill:var(--ink)}
+  .center text.crole{font-family:'Space Grotesk';font-size:9.5px;letter-spacing:.16em;fill:var(--gold);text-transform:uppercase}
+
+  @keyframes pulse{0%,100%{opacity:.35;r:13}50%{opacity:.08;r:18}}
+  .halo{animation:pulse 3.2s ease-in-out infinite;pointer-events:none}
+
+  .legend{position:absolute;left:28px;bottom:18px;display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+  .legend b{font-weight:500;color:var(--ink)}
+  .legend .li{display:flex;align-items:center;gap:7px}
+  .legend .star{color:var(--ink)}
+
+  /* ---- right: detail panel ---- */
+  .panel{
+    flex:0 0 360px;background:var(--panel);border-left:1px solid var(--line);
+    padding:30px 28px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;
+    transition:transform .28s ease
+  }
+  .panel .empty{margin:auto;text-align:center;color:var(--muted);font-size:14px;line-height:1.6;max-width:240px}
+  .panel .empty .big{font-family:'Space Grotesk';font-size:42px;margin-bottom:10px;opacity:.5}
+  .badge{display:inline-flex;align-items:center;gap:7px;font-family:'Space Grotesk';font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:6px 11px;border-radius:999px;width:fit-content}
+  .badge .swatch{width:8px;height:8px;border-radius:50%}
+  .cardname{font-family:'Space Grotesk';font-weight:700;font-size:23px;line-height:1.15;letter-spacing:-.01em}
+  .tags{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{font-size:11px;font-family:'Space Grotesk';font-weight:600;padding:5px 10px;border-radius:7px;letter-spacing:.03em}
+  .tag.warm{background:rgba(255,241,201,.12);color:var(--warm);border:1px solid rgba(255,241,201,.3)}
+  .tag.target{background:rgba(232,131,107,.14);color:var(--coral);border:1px solid rgba(232,131,107,.35)}
+  .tag.screen{background:rgba(133,151,173,.12);color:var(--muted);border:1px solid var(--line)}
+  .row{display:flex;flex-direction:column;gap:5px}
+  .row .k{font-family:'Space Grotesk';font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .row .v{font-size:14px;line-height:1.55;color:var(--ink)}
+  .move{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:15px 16px;margin-top:4px}
+  .move .k{color:var(--gold)}
+  hr.div{border:none;border-top:1px solid var(--line);margin:2px 0}
+
+  @media (max-width:900px){
+    .wrap{flex-direction:column}
+    .panel{position:fixed;inset:auto 0 0 0;flex-basis:auto;max-height:62vh;border-left:none;border-top:1px solid var(--line);border-radius:20px 20px 0 0;transform:translateY(101%);z-index:20;box-shadow:0 -20px 60px rgba(0,0,0,.5)}
+    .panel.open{transform:translateY(0)}
+    .panel .empty{display:none}
+    .legend{position:static;margin:6px 28px 14px}
+    h1{font-size:21px}
+  }
+  .closebtn{display:none}
+  @media (max-width:900px){.closebtn{display:flex;position:absolute;right:18px;top:16px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--bg2);color:var(--ink);align-items:center;justify-content:center;cursor:pointer;font-size:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage">
+    <header>
+      <div class="eyebrow">Riyadh · GRC &amp; Security</div>
+      <h1>Your Company Map <span>· 90 doors, 3 routes</span></h1>
+      <div class="sub">Each dot is a company worth approaching. Routes are <em>strategies</em>, not rankings — pick by what you want most. Glowing dots are warm doors where you already have a way in. Tap any dot.</div>
+    </header>
+
+    <div class="controls">
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8597AD" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="search" placeholder="Search a company…" autocomplete="off">
+      </label>
+      <button class="chip a" data-route="A" data-on="true"><span class="swatch" style="background:var(--gold)"></span>Best pay &amp; security</button>
+      <button class="chip b" data-route="B" data-on="true"><span class="swatch" style="background:var(--teal)"></span>Strong brand, faster</button>
+      <button class="chip c" data-route="C" data-on="true"><span class="swatch" style="background:var(--coral)"></span>Direct fit, fastest</button>
+      <button class="chip warm" data-warm="1" data-on="false">★ Warm doors only</button>
+    </div>
+
+    <div class="mapbox">
+      <svg class="map" id="map" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="legend">
+        <div class="li"><span class="star">★</span> <b>Warm door</b> — you have an in</div>
+        <div class="li" style="color:var(--coral)">◆ <b style="color:var(--coral)">CCDS</b> — your live target</div>
+        <div class="li">Ring distance = arbitrary; cluster = route</div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <button class="closebtn" id="closebtn">✕</button>
+    <div class="empty" id="empty"><div class="big">◎</div>Tap a company dot to see why it fits, whether it's a warm door, and your next move.</div>
+    <div id="detail" style="display:none;flex-direction:column;gap:16px"></div>
+  </aside>
+</div>
+
+<script>
+const ROUTES = {
+  A:{name:"Best pay & security", color:"#E0B341", angle:270, blurb:"In-house GRC: banks (SAMA), critical infrastructure (NCA/ECC), PIF & giga-projects. Deepest, best-paid, strongest saudisation pull — but slower."},
+  B:{name:"Strong brand, faster", color:"#3FB6A8", angle:30, blurb:"National cyber champions, Big 4, gov digital, integrators, fintech. Strong name and pay, GRC-specialised, faster than in-house."},
+  C:{name:"Direct fit, fastest", color:"#E8836B", angle:150, blurb:"Specialist mid-size cyber-GRC firms. Match your experience directly and land fastest — but screen on salary first, many won't clear 30K. CCDS sits here."}
+};
+
+// flags: warm = warm door, target = CCDS live role, screen = salary-screen first
+const DATA = [
+  // ---------- Route A ----------
+  {r:"A",n:"Saudi National Bank (SNB)",f:"Largest bank in KSA; deep SAMA-regulated GRC teams."},
+  {r:"A",n:"Al Rajhi Bank",f:"Biggest Islamic bank; mature risk & compliance function."},
+  {r:"A",n:"Riyad Bank",f:"Established in-house GRC under SAMA."},
+  {r:"A",n:"Alinma Bank",f:"Growing cyber-GRC function, active hiring."},
+  {r:"A",n:"Banque Saudi Fransi",warm:1,f:"You already interviewed here — a real warm door to re-open."},
+  {r:"A",n:"Saudi Awwal Bank (SAB)",f:"SAMA bank with a settled GRC practice."},
+  {r:"A",n:"Arab National Bank (ANB)",f:"In-house risk & compliance, steady demand."},
+  {r:"A",n:"Bank Albilad",f:"Mid-size bank scaling its GRC team."},
+  {r:"A",n:"SNB Capital",f:"Investment arm; capital-markets-regulated GRC."},
+  {r:"A",n:"Al Rajhi Capital",f:"Capital markets compliance & risk."},
+  {r:"A",n:"SABIC",warm:1,f:"Your current main client — your single strongest warm door."},
+  {r:"A",n:"Ma'aden",warm:1,f:"Mining giant; NCA/ECC critical-infra scope, warm contacts likely."},
+  {r:"A",n:"ACWA Power",f:"Energy; OT and critical-infrastructure security."},
+  {r:"A",n:"Saudi Electricity Company",f:"Critical infrastructure squarely under NCA scope."},
+  {r:"A",n:"National Water Company",f:"Critical-infra GRC and compliance."},
+  {r:"A",n:"Public Investment Fund (PIF)",f:"Sovereign fund; premium GRC, hardest to enter."},
+  {r:"A",n:"NEOM",f:"Giga-project building security governance from scratch."},
+  {r:"A",n:"Roshn",warm:1,f:"PIF giga-project with GRC roles; warm path available."},
+  {r:"A",n:"Qiddiya",f:"Giga-project standing up its governance function."},
+  {r:"A",n:"Diriyah",f:"Giga-project scaling compliance fast."},
+  {r:"A",n:"Red Sea Global",f:"Giga-project; security & risk build-out."},
+  {r:"A",n:"National Housing Company (NHC)",f:"PIF entity; governance and compliance hiring."},
+  {r:"A",n:"stc",warm:1,f:"Your employer group — huge in-house cyber, internal-mobility door."},
+  {r:"A",n:"Mobily",f:"Telecom; regulated security and risk."},
+  {r:"A",n:"Zain KSA",f:"Telecom GRC and compliance."},
+  {r:"A",n:"Almarai",f:"Large enterprise with real IT-governance needs."},
+  {r:"A",n:"Tawuniya",f:"Insurer; SAMA-regulated risk function."},
+  {r:"A",n:"Riyadh Air",f:"New flag carrier building GRC from the ground up."},
+  {r:"A",n:"stc Bank",f:"New digital bank — fresh GRC team forming."},
+  {r:"A",n:"Dr. Sulaiman Al Habib (HMG)",f:"Healthcare; data-heavy privacy & compliance."},
+  // ---------- Route B ----------
+  {r:"B",n:"sirar by stc",warm:1,f:"National cyber champion inside your stc group — warm door."},
+  {r:"B",n:"SITE",f:"National cyber & technology entity."},
+  {r:"B",n:"tahakom",f:"Government security technology."},
+  {r:"B",n:"Elm",f:"Gov digital; security services at scale."},
+  {r:"B",n:"Thiqah",f:"Government digital services arm."},
+  {r:"B",n:"SAMI / Advanced Electronics",f:"Defence electronics; security-cleared work."},
+  {r:"B",n:"Tamkeen Technologies",f:"Government technology integrator."},
+  {r:"B",n:"SDAIA",f:"Data & AI authority — data governance focus."},
+  {r:"B",n:"Digital Government Authority",f:"Gov digital regulator; governance roles."},
+  {r:"B",n:"CST",f:"Comms, Space & Tech regulator."},
+  {r:"B",n:"Deloitte",f:"Big 4; large GRC advisory practice."},
+  {r:"B",n:"PwC",f:"Big 4; risk consulting (you interviewed near here via BCT)."},
+  {r:"B",n:"EY",f:"Big 4; cyber & GRC services."},
+  {r:"B",n:"KPMG",f:"Big 4; governance advisory."},
+  {r:"B",n:"Accenture",f:"Security consulting at scale."},
+  {r:"B",n:"IBM Consulting",f:"Cyber & GRC services (a friend's contact here)."},
+  {r:"B",n:"Protiviti",f:"Risk & compliance specialist consultancy."},
+  {r:"B",n:"RSM",f:"Mid-tier advisory; GRC engagements."},
+  {r:"B",n:"Crowe",f:"Audit & risk advisory."},
+  {r:"B",n:"BDO",f:"Advisory; governance and risk."},
+  {r:"B",n:"Solutions by stc",f:"Integrator; managed security services."},
+  {r:"B",n:"Sahab (stc)",f:"Cloud & security arm of stc."},
+  {r:"B",n:"Ejada",f:"Systems integrator running GRC projects."},
+  {r:"B",n:"Innovative Solutions (ISCO)",f:"Cybersecurity integrator."},
+  {r:"B",n:"Al Moammar Info Systems (MIS)",f:"IT integrator with a security practice."},
+  {r:"B",n:"Geidea",f:"Fintech; PCI-DSS and payments compliance."},
+  {r:"B",n:"Tamara",f:"BNPL fintech; regulated risk & compliance."},
+  {r:"B",n:"Lean Technologies",f:"Open-banking fintech; compliance-heavy."},
+  {r:"B",n:"Medgulf",f:"Insurer; regulated GRC function."},
+  {r:"B",n:"Saudi Payments (mada)",f:"Payments infrastructure; heavy compliance."},
+  // ---------- Route C ----------
+  {r:"C",n:"Help AG",f:"Regional cyber leader with strong GRC services."},
+  {r:"C",n:"Infratech",f:"Cyber & infrastructure services."},
+  {r:"C",n:"Security Matterz",f:"KSA cybersecurity consultancy."},
+  {r:"C",n:"Safe Decision Co.",f:"Cybersecurity services firm."},
+  {r:"C",n:"SecurityPact",f:"GRC-focused cyber consultancy."},
+  {r:"C",n:"ITButler e-Services",f:"Managed cyber & GRC."},
+  {r:"C",n:"Cyberum",f:"Cyber consultancy."},
+  {r:"C",n:"CyberStone",f:"GRC services."},
+  {r:"C",n:"IGRC Square",f:"Dedicated GRC specialist — clean fit."},
+  {r:"C",n:"Trusted Partners",f:"Cyber advisory."},
+  {r:"C",n:"GRC Arabia",f:"Pure-play GRC firm — very direct fit."},
+  {r:"C",n:"SecureLink Arabia",f:"Cyber services."},
+  {r:"C",n:"Nozom Techs",f:"Security services."},
+  {r:"C",n:"Perceptions Mgmt Consulting",f:"GRC consulting."},
+  {r:"C",n:"Advance Datasec",f:"Data security & GRC."},
+  {r:"C",n:"TechArch",f:"Security architecture & GRC."},
+  {r:"C",n:"Estijabh",f:"Cyber services."},
+  {r:"C",n:"EBTCO",f:"Technology & security services."},
+  {r:"C",n:"Bluechip Technologies",f:"Security & data services."},
+  {r:"C",n:"Cyberani",f:"Aramco-linked cyber firm — strong fit, screen pay."},
+  {r:"C",n:"COGNNA",f:"Cyber product / SOC."},
+  {r:"C",n:"CyberKnight",f:"Cyber distribution & advisory."},
+  {r:"C",n:"Spire Solutions",f:"Cyber solutions provider."},
+  {r:"C",n:"StarLink",f:"Cyber distribution & services."},
+  {r:"C",n:"Tamkeen Security",f:"Security services firm."},
+  {r:"C",n:"Adalites",f:"Cyber & GRC services."},
+  {r:"C",n:"SAT Microsystems",f:"Technology services."},
+  {r:"C",n:"Saudi Bell Group",f:"Technology & security."},
+  {r:"C",n:"Cipher",f:"Cyber services."},
+  {r:"C",n:"CCDS",target:1,f:"Your live opportunity — the role this whole prep is built around."}
+];
+
+const cx=500, cy=500, RAD=Math.PI/180;
+const rings={A:[185,255,325,395],B:[185,255,325,395],C:[185,255,325,395]};
+const ringCounts=[6,8,8,8];
+const sectorWidth=98;
+
+// assign positions
+function layout(){
+  for(const key of ["A","B","C"]){
+    const items=DATA.filter(d=>d.r===key);
+    const A=ROUTES[key].angle;
+    let idx=0;
+    ringCounts.forEach((cnt,ri)=>{
+      const rad=rings[key][ri];
+      for(let i=0;i<cnt && idx<items.length;i++,idx++){
+        const a = A - sectorWidth/2 + (i+0.5)*(sectorWidth/cnt);
+        items[idx].x = cx + rad*Math.cos(a*RAD);
+        items[idx].y = cy + rad*Math.sin(a*RAD);
+        items[idx].a = a;
+      }
+    });
+  }
+}
+layout();
+
+const svg=document.getElementById('map');
+const NS="http://www.w3.org/2000/svg";
+function el(t,attrs){const e=document.createElementNS(NS,t);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+
+// links layer
+const linkLayer=el('g',{});svg.appendChild(linkLayer);
+const nodeLayer=el('g',{});
+const hubLayer=el('g',{});
+svg.appendChild(hubLayer);
+svg.appendChild(nodeLayer);
+
+// draw links
+DATA.forEach(d=>{
+  const ln=el('line',{x1:cx,y1:cy,x2:d.x,y2:d.y,class:'link',stroke:ROUTES[d.r].color,'stroke-opacity':0.13});
+  d._link=ln;linkLayer.appendChild(ln);
+});
+
+// route hubs
+for(const key of ["A","B","C"]){
+  const A=ROUTES[key].angle, hr=112;
+  const hx=cx+hr*Math.cos(A*RAD), hy=cy+hr*Math.sin(A*RAD);
+  const g=el('g',{class:'hub'});
+  const labelLines = ROUTES[key].name.split(', ');
+  const ty = hy + (A===270? -8 : 24);
+  const t1=el('text',{x:hx,y:ty,'text-anchor':'middle',class:'rlabel',fill:ROUTES[key].color});
+  t1.textContent=ROUTES[key].name;
+  const t2=el('text',{x:hx,y:ty+15,'text-anchor':'middle',class:'rcount'});
+  t2.textContent=DATA.filter(d=>d.r===key).length+" companies";
+  g.appendChild(t1);g.appendChild(t2);
+  hubLayer.appendChild(g);
+}
+
+// center
+const cg=el('g',{class:'center'});
+cg.appendChild(el('circle',{cx:cx,cy:cy,r:46,fill:'#13243d',stroke:'#243b5c','stroke-width':1}));
+cg.appendChild(el('circle',{cx:cx,cy:cy,r:46,fill:'none',stroke:'#E0B341','stroke-opacity':.35,'stroke-width':1}));
+const cn=el('text',{x:cx,y:cy-2,'text-anchor':'middle',class:'cname'});cn.textContent="Haifaa";
+const cr=el('text',{x:cx,y:cy+15,'text-anchor':'middle',class:'crole'});cr.textContent="GRC · Riyadh";
+cg.appendChild(cn);cg.appendChild(cr);
+hubLayer.appendChild(cg);
+
+// nodes
+DATA.forEach(d=>{
+  const g=el('g',{class:'node'});
+  const col=ROUTES[d.r].color;
+  if(d.warm){
+    g.appendChild(el('circle',{cx:d.x,cy:d.y,r:13,fill:'#FFF1C9','fill-opacity':.18,class:'halo'}));
+  }
+  if(d.target){
+    // diamond marker behind
+    const s=11;
+    g.appendChild(el('path',{d:`M${d.x} ${d.y-s} L${d.x+s} ${d.y} L${d.x} ${d.y+s} L${d.x-s} ${d.y} Z`,fill:'none',stroke:col,'stroke-width':1.5,'stroke-opacity':.7}));
+  }
+  const dot=el('circle',{cx:d.x,cy:d.y,r:d.target?7:6,class:'dot',fill:col,stroke:d.warm?'#FFF1C9':'none','stroke-width':d.warm?1.5:0});
+  g.appendChild(dot);
+  // label
+  const flip = d.x < cx;
+  const tx = d.x + (flip? -11 : 11);
+  const t=el('text',{x:tx,y:d.y+3,'text-anchor':flip?'end':'start'});
+  t.textContent=d.n.length>26?d.n.slice(0,24)+'…':d.n;
+  g.appendChild(t);
+  g.addEventListener('click',e=>{e.stopPropagation();select(d);});
+  d._g=g;d._dot=dot;
+  nodeLayer.appendChild(g);
+});
+
+// ---- detail panel ----
+const panel=document.getElementById('panel');
+const empty=document.getElementById('empty');
+const detail=document.getElementById('detail');
+let selected=null;
+
+function select(d){
+  if(selected)selected._g.classList.remove('sel');
+  selected=d;d._g.classList.add('sel');
+  empty.style.display='none';detail.style.display='flex';
+  const col=ROUTES[d.r].color;
+  let tags='';
+  if(d.warm)tags+='<span class="tag warm">★ Warm door</span>';
+  if(d.target)tags+='<span class="tag target">◆ Live target</span>';
+  if(d.r==='C'&&!d.target)tags+='<span class="tag screen">Screen salary first</span>';
+  let move;
+  if(d.warm)move="Reach out to your contact here first. Ask who owns GRC hiring and request a warm intro — don't wait for a posting.";
+  else if(d.target)move="This is the one you're prepping for. Nail the ops/findings side (Q2, Q3, Q8) and confirm the range clears 30K.";
+  else if(d.r==='C')move="Fast to land, but confirm the salary range upfront on the screening call — many here sit below 30K.";
+  else if(d.r==='A')move="Slower process, best pay. Find someone in your network inside, or the hiring manager on LinkedIn, before applying.";
+  else move="Strong brand and quicker. Apply, then message the hiring manager directly to get in front of them.";
+
+  detail.innerHTML=`
+    <div class="badge" style="background:${hexA(col,.14)};color:${col}"><span class="swatch" style="background:${col}"></span>${ROUTES[d.r].name}</div>
+    <div class="cardname">${d.n}</div>
+    ${tags?`<div class="tags">${tags}</div>`:''}
+    <hr class="div">
+    <div class="row"><div class="k">Why it fits you</div><div class="v">${d.f}</div></div>
+    <div class="row"><div class="k">About this route</div><div class="v" style="color:var(--muted);font-size:13px">${ROUTES[d.r].blurb}</div></div>
+    <div class="move"><div class="row"><div class="k">Your move</div><div class="v">${move}</div></div></div>
+  `;
+  if(window.innerWidth<=900)panel.classList.add('open');
+}
+function hexA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+
+document.getElementById('closebtn').onclick=()=>panel.classList.remove('open');
+svg.addEventListener('click',()=>{if(selected){selected._g.classList.remove('sel');selected=null;}empty.style.display='';detail.style.display='none';panel.classList.remove('open');});
+
+// ---- filters ----
+const state={A:true,B:true,C:true,warm:false,q:""};
+function applyFilters(){
+  DATA.forEach(d=>{
+    let show=state[d.r];
+    if(state.warm && !d.warm)show=false;
+    if(state.q && !d.n.toLowerCase().includes(state.q))show=false;
+    d._g.classList.toggle('dim',!show);
+    d._link.style.opacity=show?0.13:0.02;
+  });
+}
+document.querySelectorAll('.chip[data-route]').forEach(c=>{
+  c.onclick=()=>{const r=c.dataset.route;state[r]=!state[r];c.dataset.on=state[r];applyFilters();};
+});
+const warmChip=document.querySelector('.chip[data-warm]');
+warmChip.onclick=()=>{state.warm=!state.warm;warmChip.dataset.on=state.warm;applyFilters();};
+document.getElementById('search').addEventListener('input',e=>{state.q=e.target.value.trim().toLowerCase();applyFilters();});
+
+// ---- gentle pan/zoom ----
+let vb={x:0,y:0,w:1000,h:1000};
+function setVB(){svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);}
+svg.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const scale=e.deltaY>0?1.08:0.92;
+  const nw=Math.min(1400,Math.max(520,vb.w*scale));
+  const r=nw/vb.w;
+  const mx=vb.x+vb.w*(e.offsetX/svg.clientWidth);
+  const my=vb.y+vb.h*(e.offsetY/svg.clientHeight);
+  vb.x=mx-(mx-vb.x)*r;vb.y=my-(my-vb.y)*r;vb.w*=r;vb.h*=r;setVB();
+},{passive:false});
+let drag=null;
+svg.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,vx:vb.x,vy:vb.y};});
+svg.addEventListener('pointermove',e=>{if(!drag)return;const sx=vb.w/svg.clientWidth,sy=vb.h/svg.clientHeight;vb.x=drag.vx-(e.clientX-drag.x)*sx;vb.y=drag.vy-(e.clientY-drag.y)*sy;setVB();});
+window.addEventListener('pointerup',()=>drag=null);
+</script>
+</body>
+</html>
